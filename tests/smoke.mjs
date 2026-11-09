@@ -41,6 +41,10 @@ assert.equal(pkg.name, "dsh-free-pi");
 assert.ok(pkg.dsh?.bundle?.patch, "dsh.bundle.patch declared");
 assert.ok(existsSync(join(root, pkg.dsh.bundle.patch)), "bundle patch file exists");
 assert.ok(pkg.peerDependencies?.["@deepseek-ai/dsh-llm"], "host peers declared");
+assert.equal(pkg.version, "0.2.0");
+assert.ok(pkg.exports?.["./client"], "client export declared for the account panel");
+assert.ok(existsSync(join(root, pkg.exports["./client"])), "client module exists on disk");
+assert.equal(pkg.dsh?.client?.platform, "web", "client targets the web shell");
 
 // --- account pool ---------------------------------------------------------------
 assert.equal(core.loadAccounts().length, 0, "pool starts empty");
@@ -81,5 +85,85 @@ assert.deepEqual(catalog.map((m) => m.id), ["deepseek-v4.1-flash"], "unavailable
 
 // --- session id stability -------------------------------------------------------------
 assert.equal(core.getSessionId(), core.getSessionId(), "session id is stable per install");
+
+// --- account management (describe / remove / single-shot device poll) -------------------
+const described = core.describeAccounts();
+assert.equal(described.length, 2, "describe covers both pool accounts");
+assert.ok(
+  described.every((a) => a.source === "pool" && a.removable === true && typeof a.addedAt === "string"),
+  "pool accounts are removable and carry addedAt",
+);
+core.saveJwt("jwt-main");
+const withMain = core.describeAccounts();
+const main = withMain.find((a) => a.id === "default");
+assert.ok(main, "credentials.json sign-in shows up as the default account");
+assert.equal(main.source, "credentials");
+assert.equal(main.removable, false, "the credentials file sign-in is not pool-removable");
+const bId = withMain.find((a) => a.label === "b").id;
+assert.equal(core.removeAccount(bId), true, "pool removal succeeds");
+assert.equal(core.removeAccount(bId), false, "a second removal finds nothing");
+assert.ok(!core.loadAccounts().some((a) => a.jwt === "jwt-b"), "removed account leaves the rotation");
+assert.equal(core.removeAccount("default"), false, "the default account cannot be removed via the pool");
+
+const realFetch = globalThis.fetch;
+let pollBody = {};
+globalThis.fetch = async (url) => {
+  if (new URL(url).pathname === "/auth/token") return jsonRes(200, pollBody);
+  throw new Error("unexpected path");
+};
+const stillPending = await core.pollDeviceTokenOnce("sess-1");
+assert.equal(stillPending.pending, true, "no token yet reads as pending");
+pollBody = { token: "jwt-new" };
+const completed = await core.pollDeviceTokenOnce("sess-1");
+assert.equal(completed.token, "jwt-new", "a token completes the single-shot poll");
+globalThis.fetch = async () => jsonRes(403, { code: "consent_required" });
+await assert.rejects(() => core.pollDeviceTokenOnce("sess-1"), /consent_required/);
+globalThis.fetch = realFetch;
+
+// --- ads gate: a 403 with the ads text pauses one account, failover covers it ------------
+core.addAccount({ label: "c", jwt: "jwt-c" });
+core.addAccount({ label: "d", jwt: "jwt-d" });
+const ADS_BODY =
+  "free-pi is free because ads pay for it, so ads can't be skipped. Ads aren't showing for this account, so free completions are paused. Run free-pi with `npx free-pi-cli@latest` so ads show, then retry.";
+const textRes = (status, text) => ({
+  status,
+  ok: status >= 200 && status < 300,
+  clone() { return this; },
+  text: async () => text,
+  json: async () => ({}),
+});
+const adsFetch = async (_url, init) => {
+  const auth = init.headers.authorization || "";
+  if (auth.includes("jwt-d")) return jsonRes(200, { ok: true });
+  if (auth.includes("jwt-c")) return textRes(403, ADS_BODY);
+  return jsonRes(401, { error: "nope" }); // every other account is out of the way
+};
+const adsRotated = await core.rotatingFetch("/v1/chat/completions", { body: "{}", fetchImpl: adsFetch });
+assert.equal(adsRotated.res.status, 200, "ads-paused account fails over to a healthy one");
+assert.equal(adsRotated.account.jwt, "jwt-d");
+const cInfo = core.describeAccounts().find((a) => a.label === "c");
+assert.equal(cInfo.status, "paused-ads", "describeAccounts surfaces the ads pause distinctly");
+assert.ok(
+  cInfo.pausedUntil && Date.parse(cInfo.pausedUntil) > Date.now() + 20 * 60 * 1000,
+  "the pause carries a resume time about 30 minutes out",
+);
+const cQuota = await core.fetchAccountQuota(
+  { id: cInfo.id, label: "c", jwt: "jwt-c" },
+  async () => jsonRes(200, meRecord),
+);
+assert.equal(cQuota.status, "paused-ads", "the quota summary surfaces the ads pause too");
+assert.equal(cQuota.ok, true, "/me still answers while completions are paused");
+// A 403 that is not the ads gate is returned to the caller, never a pause.
+const noPause = await core.rotatingFetch("/v1/chat/completions", {
+  body: "{}",
+  fetchImpl: async () => textRes(403, "forbidden for another reason"),
+});
+assert.equal(noPause.res.status, 403, "an unrelated 403 is surfaced, not swallowed");
+assert.ok(noPause.account, "an unrelated 403 does not fail over");
+assert.equal(
+  core.describeAccounts().find((a) => a.label === "d").status,
+  "ok",
+  "the account that served the unrelated 403 stays un-paused",
+);
 
 console.log("smoke: all assertions passed");
