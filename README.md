@@ -8,7 +8,7 @@ Free models for DeepSeek Harness, funded by ads — no API key, no card, one Git
 
 **DeepSeek V4.1 Flash, DeepSeek V4 Flash, GLM 5.3 Flash and Particle, free and unlimited in DSH.**
 
-![CI](https://github.com/wawaTuna/dsh-free-pi/actions/workflows/ci.yml/badge.svg) ![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![CI](https://github.com/wawaTuna/dsh-free-pi/actions/workflows/ci.yml/badge.svg) [![npm](https://img.shields.io/npm/v/dsh-free-pi)](https://www.npmjs.com/package/dsh-free-pi) ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 **[Quick start](#quick-start) · [Multiple accounts](#multiple-accounts--rotation) · [How it works](#how-it-works) · [Privacy](#privacy) · [简体中文](README.zh-CN.md)**
 
