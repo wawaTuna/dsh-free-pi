@@ -45,7 +45,7 @@
     }
   },
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "scripts": {
     "test": "node tests/smoke.mjs"
   },
@@ -56,5 +56,12 @@
   "homepage": "https://github.com/wawaTuna/dsh-free-pi#readme",
   "bugs": {
     "url": "https://github.com/wawaTuna/dsh-free-pi/issues"
-  }
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-plugin",
+    "free-pi",
+    "deepseek"
+  ]
 }
