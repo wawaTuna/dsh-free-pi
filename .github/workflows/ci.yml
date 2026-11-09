@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check
+        # lib/index.js imports DSH host packages that only exist inside a
+        # DSH profile, so it is syntax-checked here but not imported.
+        run: |
+          node --check lib/index.js
+          node --check lib/free-pi-core.mjs
+          node --check tests/smoke.mjs
+      - name: Smoke tests (hermetic — upstream calls are stubbed)
+        run: node tests/smoke.mjs

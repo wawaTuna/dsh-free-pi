@@ -1,0 +1,60 @@
+{
+  "description": "DSH provider plugin: free-pi (ad-funded free inference, incl. DeepSeek V4.1 Flash) as an OpenAI-compatible model source",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "exports": {
+    ".": "./lib/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./locale/en.json": "./locale/en.json",
+    "./locale/zh.json": "./locale/zh.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "locale",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "license": "MIT",
+  "main": "./lib/index.js",
+  "name": "dsh-free-pi",
+  "peerDependencies": {
+    "@deepseek-ai/dsh-llm": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-llm-pi-ai": "0.2.2-rc.1",
+    "@deepseek-ai/schemastery": "~3.18.5",
+    "@earendil-works/pi-ai": "^1.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-llm": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-llm-pi-ai": {
+      "optional": true
+    },
+    "@deepseek-ai/schemastery": {
+      "optional": true
+    },
+    "@earendil-works/pi-ai": {
+      "optional": true
+    }
+  },
+  "type": "module",
+  "version": "0.1.0",
+  "scripts": {
+    "test": "node tests/smoke.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wawaTuna/dsh-free-pi.git"
+  },
+  "homepage": "https://github.com/wawaTuna/dsh-free-pi#readme",
+  "bugs": {
+    "url": "https://github.com/wawaTuna/dsh-free-pi/issues"
+  }
+}
