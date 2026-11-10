@@ -41,7 +41,13 @@ assert.equal(pkg.name, "dsh-free-pi");
 assert.ok(pkg.dsh?.bundle?.patch, "dsh.bundle.patch declared");
 assert.ok(existsSync(join(root, pkg.dsh.bundle.patch)), "bundle patch file exists");
 assert.ok(pkg.peerDependencies?.["@deepseek-ai/dsh-llm"], "host peers declared");
-assert.equal(pkg.version, "0.2.0");
+assert.equal(pkg.version, "0.2.1");
+assert.equal(pkg.displayName, "FreePi", "settings panel shows the plugin as FreePi");
+assert.ok(pkg.icon && existsSync(join(root, pkg.icon)), "plugin icon file exists on disk");
+for (const lang of ["en", "zh"]) {
+  const locale = JSON.parse(readFileSync(join(root, "locale", `${lang}.json`), "utf8"));
+  assert.equal(locale.meta.title, "FreePi", `${lang} locale title is FreePi`);
+}
 assert.ok(pkg.exports?.["./client"], "client export declared for the account panel");
 assert.ok(existsSync(join(root, pkg.exports["./client"])), "client module exists on disk");
 assert.equal(pkg.dsh?.client?.platform, "web", "client targets the web shell");
