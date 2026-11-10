@@ -41,7 +41,7 @@ assert.equal(pkg.name, "dsh-free-pi");
 assert.ok(pkg.dsh?.bundle?.patch, "dsh.bundle.patch declared");
 assert.ok(existsSync(join(root, pkg.dsh.bundle.patch)), "bundle patch file exists");
 assert.ok(pkg.peerDependencies?.["@deepseek-ai/dsh-llm"], "host peers declared");
-assert.equal(pkg.version, "0.2.1");
+assert.equal(pkg.version, "0.2.2");
 assert.equal(pkg.displayName, "FreePi", "settings panel shows the plugin as FreePi");
 assert.ok(pkg.icon && existsSync(join(root, pkg.icon)), "plugin icon file exists on disk");
 for (const lang of ["en", "zh"]) {
@@ -88,6 +88,15 @@ const catalog = await core.fetchCatalog(async () =>
   jsonRes(200, { models: [{ id: "deepseek-v4.1-flash", name: "V4.1" }, { id: "gone", name: "Gone", unavailable: true }] }),
 );
 assert.deepEqual(catalog.map((m) => m.id), ["deepseek-v4.1-flash"], "unavailable models filtered");
+
+// --- model capability metadata ---------------------------------------------------------
+assert.equal(core.modelCaps("deepseek-v4.1-flash").reasoning, true, "v4.1-flash reasons (effort verified live)");
+assert.equal(core.modelCaps("deepseek-v4.1-flash").image, true, "v4.1-flash sees images (verified live)");
+assert.equal(core.modelCaps("deepseek-v4-flash").image, false, "v4-flash rejects image parts upstream (verified)");
+assert.equal(core.modelCaps("deepseek-v4-flash").effort, true);
+assert.equal(core.modelCaps("mimo-v2.6-flash").effort, false, "mimo takes no reasoning_effort upstream");
+assert.equal(core.modelCaps("solar-pro-4").context, 524288, "solar keeps its real 512K context");
+assert.deepEqual(core.modelCaps("some-unknown-model"), core.DEFAULT_MODEL_CAPS, "unknown ids get conservative defaults");
 
 // --- session id stability -------------------------------------------------------------
 assert.equal(core.getSessionId(), core.getSessionId(), "session id is stable per install");
